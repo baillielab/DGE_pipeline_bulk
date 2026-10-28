@@ -1,6 +1,6 @@
 # Pseudobulk DGE Pipeline (Snakemake)
 
-This repository contains the Snakemake workflow and scripts for running the ODAP pseudobulk differential gene expression (DGE) pipeline.
+This repository contains the Snakemake workflow and scripts for running the ODAP pseudobulk differential gene expression (DGE) pipeline for bulk RNA-seq differential gene expression (no cell type resolution).
 
 ## Overview
 
