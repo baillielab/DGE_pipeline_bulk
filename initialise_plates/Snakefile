@@ -1,0 +1,46 @@
+# ----------------------------
+# Snakefile
+# ----------------------------
+
+import os
+from pathlib import Path
+
+configfile: "config.yaml"
+
+BASE_DIR = Path(config["input"]["base_dir"])
+DATA_DIR = Path(config["input"]["data_dir"])
+DATA_RAW = Path(DATA_DIR / "raw")
+
+SAMPLES = [p.name for p in DATA_RAW.iterdir() if p.is_dir()]
+
+rule all:
+    input:
+        str(DATA_DIR / "merged" / "genes.tsv"),
+        str(DATA_DIR / "merged" / "cells.parquet"),
+        str(DATA_DIR / "merged" / "counts_manifest.tsv")
+
+rule S01_ingest:
+    input:
+        config="config.yaml"
+    output:
+        genes=str(DATA_DIR / "ingested" / "{sample}" / "S01_ingest" / "genes.tsv"),
+        cells=str(DATA_DIR / "ingested" / "{sample}" / "S01_ingest" / "cells.parquet"),
+        manifest=str(DATA_DIR / "ingested" / "{sample}" / "S01_ingest" / "counts_manifest.tsv")
+    params:
+        sample="{sample}"
+    shell:
+        "Rscript scripts/01_ingest.R {input.config} {params.sample}"
+
+
+rule S01_merge:
+    input:
+        genes=expand(str(DATA_DIR / "ingested" / "{sample}" / "S01_ingest" / "genes.tsv"), sample=SAMPLES),
+        cells=expand(str(DATA_DIR / "ingested" / "{sample}" / "S01_ingest" / "cells.parquet"), sample=SAMPLES),
+        manifest=expand(str(DATA_DIR / "ingested" / "{sample}" / "S01_ingest" / "counts_manifest.tsv"), sample=SAMPLES),
+        config="config.yaml"
+    output:
+        genes=str(DATA_DIR / "merged" / "genes.tsv"),
+        cells=str(DATA_DIR / "merged" / "cells.parquet"),
+        manifest=str(DATA_DIR / "merged" / "counts_manifest.tsv")
+    shell:
+        "Rscript scripts/01.1_merge.R {input.config}"

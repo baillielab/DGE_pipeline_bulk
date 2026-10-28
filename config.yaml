@@ -2,15 +2,16 @@
 # Project metadata
 # ----------------------------
 project:
-  name: DGE_pipeline
+  name: Tissue_culture_effect
   organism: human
 
 # ----------------------------
 # Input data
 # ----------------------------
 input:
-  base_dir: 
-  data_dir: data
+  base_dir: /mnt/odap-beegfs/a008/05_DGE_bulk/tests/261005_NP_tissue_culture_effect
+  data_dir: /mnt/odap-beegfs/a008/05_DGE_bulk/data/raw
+  merged: /mnt/odap-beegfs/a008/05_DGE_bulk/data/merged
 
 # ----------------------------
 # Ingest / metadata mapping
@@ -23,35 +24,34 @@ ingest:
     batch_col: plate
     raw_cell_id_cols:
       parse_splitpipe: bc_wells
-      standard_matrix: cell
+      standard_matrix: orig.ident
       h5ad: cell_id
-      rds: rownames
-      zarr: cell_id
-
-  samples:
-    Example_sample:
-        sample_id_col: orig.ident
-        donor_id_col: donor
-        condition_col: condition
-        batch_col: batch
-        raw_cell_id_cols:
-          rds: rownames
-
 
 # ----------------------------
 # Cell set definition
 # ----------------------------
 cell_sets:
-  high_UMI:
-    where: "n_umis > 1000"
 
-  high_feature:
-    where: "nFeature_RNA > 500"
+  Conditions:
+    where: "condition %in% c('Uncultured', 'Post_Equilibration', 'Media_Standard_6_hrs', 'Media_Standard_18_hrs', 'Media_Standard_24_hrs')"
 
-  good_QC:
-    algebra: 
-      "high_UMI AND low_mt AND high_feature"
+  Lung:
+    where: "tissue == 'Lung'"
 
+  Skin:
+    where: "tissue == 'Skin'"
+
+  Brain:
+    where: "tissue == 'Brain'"
+
+  Lung_sub:
+    algebra: "Conditions AND Lung"
+
+  Skin_sub:
+    algebra: "Conditions AND Skin"
+
+  Brain_sub:
+    algebra: "Conditions AND Brain"
 
 # ----------------------------
 # Pseudobulk
@@ -95,9 +95,9 @@ dge:
         - diagnostics
 
   design:
-    formula: "~ donor_id + condition"
+    formula: "~ batch + condition"
     reference_levels:
-      condition: "PEQ"
+      condition: "Uncultured"
     covariates_optional: ["sex", "age"]
 
   tests:
@@ -105,26 +105,29 @@ dge:
     # Global condition effect (multi-df)
     - name: condition_global
       type: coef_set
-      coefficients: ["conditionLPS", "conditionDEX", "conditionHPX", "conditionIFN", "conditionUTR"]
+      coefficients: ["conditionPost_Equilibration", "conditionMedia_Standard_6_hrs", "conditionMedia_Standard_18_hrs", "conditionMedia_Standard_24_hrs"]
+      cell_sets: ["Lung_sub", "Skin_sub", "Brain_sub"]
 
     # Simple pairwise
-    - name: LPS_vs_control
+    - name: Post_Equilibration_vs_control
       type: contrast
-      contrast: "conditionLPS"
+      contrast: "conditionPost_Equilibration"
+      cell_sets: ["Lung_sub", "Skin_sub", "Brain_sub"]
 
-    - name: DEX_vs_control
+    - name: Media_6h_vs_control
       type: contrast
-      contrast: "conditionDEX"
+      contrast: "conditionMedia_Standard_6_hrs"
+      cell_sets: ["Lung_sub", "Skin_sub", "Brain_sub"]
 
-    - name: HPX_vs_control
+    - name: Media_18h_vs_control
       type: contrast
-      contrast: "conditionHPX"
-      cell_sets: ["good_QC"]
+      contrast: "conditionMedia_Standard_18_hrs"
+      cell_sets: ["Lung_sub", "Skin_sub", "Brain_sub"]
 
-    - name: IFN_vs_control
+    - name: Media_24h_vs_control
       type: contrast
-      contrast: "conditionIFN"
-      cell_sets: ["high_feature"]
+      contrast: "conditionMedia_Standard_24_hrs"
+      cell_sets: ["Lung_sub", "Skin_sub", "Brain_sub"]
 
   constraints:
     min_units_per_level: 2
@@ -137,14 +140,3 @@ dge:
       - logFC
       - PValue
       - FDR
-    recommended_columns:
-      - gene_symbol
-      - AveExpr_or_logCPM
-      - stat
-      - mean_expr_group1
-      - mean_expr_group2
-      - prop_units_expr_group1
-      - prop_units_expr_group2
-      - n_units_total
-      - n_units_group1
-      - n_units_group2

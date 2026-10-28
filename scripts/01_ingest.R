@@ -1,6 +1,5 @@
 #!/usr/bin/env Rscript
 rm(list = ls())
-
 # ----------------------------
 # Packages
 # ----------------------------
@@ -146,6 +145,7 @@ if (is.null(raw_cell_id_col)) stop("No raw_cell_id_col defined for input type: "
 cells <- harmonise_cells(cells, mapping, raw_cell_id_col)
 
 rownames(counts) <- genes$gene_id
+
 colnames(counts) <- cells$cell_id
 
 validate_inputs(counts, genes, cells)
@@ -161,10 +161,8 @@ cells[, n_umis := Matrix::colSums(counts)[cell_id]]
 fwrite(genes, file.path(out_dir, "genes.tsv"), sep="\t")
 write_parquet(cells, file.path(out_dir, "cells.parquet"))
 
-tmp <- tempfile(fileext = ".mtx")
-Matrix::writeMM(counts, tmp)
-system2("gzip", c("-c", tmp), stdout = file.path(out_dir, "counts.mtx.gz"))
-unlink(tmp)
+Matrix::writeMM(counts, file.path(out_dir, "counts.mtx"))
+system2("gzip", c("-c", file.path(out_dir, "counts.mtx")), stdout = file.path(out_dir, "counts.mtx.gz"))
 
 writeLines(capture.output(sessionInfo()), file.path(out_dir, "sessionInfo.txt"))
 message("S01_ingest completed successfully for sample: ", sample_name)

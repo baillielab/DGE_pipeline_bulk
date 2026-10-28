@@ -39,7 +39,7 @@ if (is.null(de_results)) de_results <- list()
 
 # 1 Overview Statistics
 
-```{r overview_table, echo=FALSE, results='asis'}
+```{r overview_table, echo=FALSE, results='asis', warning=FALSE}
 if (!is.null(summary_df) && nrow(summary_df) > 0) {
 
   print(knitr::kable(
@@ -51,7 +51,7 @@ if (!is.null(summary_df) && nrow(summary_df) > 0) {
 
 ### Cells per condition
 
-```{r cells_plot, echo=FALSE}
+```{r cells_plot, echo=FALSE, warning=FALSE}
 if (!is.null(summary_df) &&
     all(c("condition","n_cells") %in% colnames(summary_df))) {
 
@@ -68,7 +68,7 @@ if (!is.null(summary_df) &&
 
 ### UMIs per condition
 
-```{r umis_plot, echo=FALSE}
+```{r umis_plot, echo=FALSE, warning=FALSE}
 if (!is.null(summary_df) &&
     all(c("condition","n_umis") %in% colnames(summary_df))) {
 
@@ -85,7 +85,7 @@ if (!is.null(summary_df) &&
 
 ### Donor balance
 
-```{r donors_plot, echo=FALSE}
+```{r donors_plot, echo=FALSE, warning=FALSE}
 if (!is.null(summary_df) &&
     all(c("condition","n_donors") %in% colnames(summary_df))) {
 
@@ -106,7 +106,7 @@ if (!is.null(summary_df) &&
 
 ### Library size distribution
 
-```{r qc_library, echo=FALSE}
+```{r qc_library, echo=FALSE, warning=FALSE}
 if (!is.null(qc_df) &&
     all(c("condition","library_size") %in% colnames(qc_df))) {
 
@@ -123,7 +123,7 @@ if (!is.null(qc_df) &&
 
 ### Cells per pseudobulk sample
 
-```{r qc_cells, echo=FALSE}
+```{r qc_cells, echo=FALSE, warning=FALSE}
 if (!is.null(qc_df) &&
     all(c("condition","n_cells") %in% colnames(qc_df))) {
 
@@ -142,7 +142,7 @@ if (!is.null(qc_df) &&
 
 # 3 PCA of pseudobulk QC metrics
 
-```{r pca_qc, echo=FALSE}
+```{r pca_qc, echo=FALSE, warning=FALSE}
 if (!is.null(qc_df) &&
     all(c("sample_id","condition","library_size","n_cells") %in% colnames(qc_df))) {
 
@@ -175,7 +175,7 @@ if (!is.null(qc_df) &&
 
 # 4 Differential Expression Summary
 
-```{r de_summary, echo=FALSE, results='asis'}
+```{r de_summary, echo=FALSE, results='asis', warning=FALSE}
 if (!is.null(de_results) && length(de_results) > 0) {
 
   sig_counts <- lapply(names(de_results), function(nm){
@@ -219,13 +219,13 @@ if (!is.null(de_results) && length(de_results) > 0) {
 
 # 5 Top Gene Heatmap
 
-```{r heatmap, echo=FALSE}
+```{r heatmap, echo=FALSE, warning=FALSE}
 if (!is.null(de_results) && length(de_results) > 1) {
 
   top_genes <- lapply(de_results, function(res){
 
-    if (!is.null(res) && "FDR" %in% colnames(res)) {
-      res %>% arrange(FDR) %>% head(20) %>% pull(gene_id)
+    if (!is.null(res) && "PValue" %in% colnames(res)) {
+      res %>% arrange(PValue) %>% head(20) %>% pull(gene_id)
     }
 
   })
@@ -258,7 +258,7 @@ if (!is.null(de_results) && length(de_results) > 1) {
 
 # 6 Contrast Details
 
-```{r contrasts, echo=FALSE, results='asis'}
+```{r contrasts, echo=FALSE, results='asis', warning=FALSE}
 if (!is.null(de_results) && length(de_results) > 0) {
 
   for (nm in names(de_results)) {
@@ -269,17 +269,17 @@ if (!is.null(de_results) && length(de_results) > 0) {
 
     if (!is.null(res) &&
         nrow(res) > 0 &&
-        all(c("gene_id","logFC","FDR") %in% colnames(res))) {
+        all(c("gene_id","logFC","PValue") %in% colnames(res))) {
 
       res$gene <- res$gene_id
-      res$FDR[res$FDR == 0] <- 1e-300
+      res$PValue[res$PValue == 0] <- 1e-300
 
-      top10 <- res %>% arrange(FDR) %>% head(10)
+      top10 <- res %>% arrange(PValue) %>% head(10)
 
       volcano <- ggplot(res,
-                        aes(logFC, -log10(FDR))) +
+                        aes(logFC, -log10(PValue))) +
         geom_point(aes(color = FDR < 0.05), alpha=0.6) +
-        scale_color_manual(values=c("grey70","firebrick")) +
+        scale_color_manual(values=c("grey70","firebrick"), labels = c("Not significant", "FDR < 0.05"), name = "Significance") +
         geom_hline(yintercept=-log10(0.05),
                    linetype="dashed",
                    colour="red") +
@@ -289,20 +289,22 @@ if (!is.null(de_results) && length(de_results) > 0) {
           max.overlaps=10
         ) +
         labs(title=paste("Volcano:", nm),
-             y="-log10(FDR)")
+             x = "log2 fold change",
+             y="-log10(PValue)")
 
       print(volcano)
       
       top <- top10 %>%
-        select(gene, logFC, FDR) %>%
+        select(gene, logFC, PValue, FDR) %>%
         mutate(
           logFC = round(logFC, 3),
+          PValue = formatC(PValue, format = "e", digits = 2),
           FDR = formatC(FDR, format = "e", digits = 2)
           )
       
       print(knitr::kable(
         top,
-        caption = "Top 10 Differentially Expressed Genes",
+        caption = "Top 10 Genes Ranked by P-value",
         align = "lrr"))
 
     } else {

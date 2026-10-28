@@ -159,7 +159,7 @@ for (test_def in config$dge$tests) {
     # --------------------------
     # Extract top results
     # --------------------------
-    top <- topTags(qlf, n = Inf)$table
+    top <- topTags(qlf, n = Inf, sort.by = "none")$table
     top$FDR <- p.adjust(top$PValue, method = constraints$multiple_testing)
     
     logcounts <- cpm(dge, log=TRUE)

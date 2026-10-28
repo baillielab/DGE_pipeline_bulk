@@ -1,0 +1,27 @@
+# ----------------------------
+# Project metadata
+# ----------------------------
+project:
+  name: Initialise_tissues
+  organism: human
+
+# ----------------------------
+# Input data
+# ----------------------------
+input:
+  base_dir: /mnt/odap-beegfs/a008/06_DGE_cell/initialise_tissues
+  data_dir: /mnt/odap-beegfs/a008/06_DGE_cell/data
+# ----------------------------
+# Ingest / metadata mapping
+# ----------------------------
+ingest:
+  default:
+    sample_id_col: sample_id
+    donor_id_col: donor_id
+    condition_col: condition
+    batch_col: plate
+    raw_cell_id_cols:
+      parse_splitpipe: bc_wells
+      standard_matrix: orig.ident
+      h5ad: cell_id
+      rds: rownames

@@ -24,7 +24,7 @@ if (length(args) < 1) {
 # ----------------------------
 config <- yaml::read_yaml(args[1])
 base <- config[["input"]][["base_dir"]]
-input_dir <- file.path(base, "outputs", "merged")
+input_dir <- config[["input"]][["merged"]]
 output_base <- file.path(base, "outputs", "cell_sets")
 dir.create(output_base, recursive = TRUE, showWarnings = FALSE)
 
